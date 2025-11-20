@@ -95,6 +95,10 @@ def index():
             farhos_file.save(farhos_path)
             kardex_file.save(kardex_path)
 
+            # Guarda las rutas de los ficheros en la sesión para poder re-procesarlos para la exportación.
+            session['last_farhos_path'] = farhos_path
+            session['last_kardex_path'] = kardex_path
+
             # --- Llamada a las Funciones de Procesamiento ---
             # Llama a las funciones del módulo 'procesador_inventario' para analizar los datos.
             df_farhos = procesar_farhos(farhos_path)
@@ -120,6 +124,55 @@ def index():
 
     # Si el método es GET, muestra la página principal sin resultados.
     return render_template('index.html', resultados=False)
+
+import io
+from flask import send_file
+
+@app.route('/export_excel', methods=['POST'])
+def export_excel():
+    """
+    Exporta los resultados de la última comparación a un archivo Excel.
+    """
+    if 'logged_in' not in session:
+        return redirect(url_for('login'))
+
+    if 'last_farhos_path' not in session or 'last_kardex_path' not in session:
+        flash('No hay resultados previos para exportar. Por favor, procesa los ficheros primero.', 'danger')
+        return redirect(url_for('index'))
+
+    farhos_path = session['last_farhos_path']
+    kardex_path = session['last_kardex_path']
+
+    try:
+        # Re-procesa los ficheros para obtener los DataFrames
+        df_farhos = procesar_farhos(farhos_path)
+        df_kardex = procesar_kardex(kardex_path)
+        df_diferencias = comparar_inventarios(df_farhos, df_kardex)
+
+        if df_diferencias is None:
+            flash('Error al re-procesar los ficheros para la exportación.', 'danger')
+            return redirect(url_for('index'))
+
+        # Crea un buffer en memoria para el archivo Excel
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df_farhos.to_excel(writer, sheet_name='Depuracion Farhos', index=False)
+            df_kardex.to_excel(writer, sheet_name='Depuracion Kardex', index=False)
+            df_diferencias.to_excel(writer, sheet_name='Diferencias Inventario', index=False)
+        
+        output.seek(0) # Vuelve al inicio del buffer
+
+        return send_file(
+            output,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            download_name='diferencias_inventario.xlsx',
+            as_attachment=True
+        )
+
+    except Exception as e:
+        flash(f'Error durante la exportación a Excel: {e}', 'danger')
+        return redirect(url_for('index'))
+
 
 # Punto de entrada para ejecutar la aplicación.
 if __name__ == '__main__':
