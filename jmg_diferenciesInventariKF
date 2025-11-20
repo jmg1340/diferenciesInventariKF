@@ -1,0 +1,10 @@
+server {
+    listen 5001;
+    server_name 192.168.8.252;
+    client_max_body_size 50M;
+
+    location / {
+        include proxy_params;
+        proxy_pass http://unix:/home/jordi/projectes/python/flask/diferenciesInventariKF/diferenciesInventariKF.sock;
+    }
+}

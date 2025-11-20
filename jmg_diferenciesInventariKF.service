@@ -1,0 +1,13 @@
+[Unit]
+Description=Gunicorn instance to serve diferenciesInventariKF
+After=network.target
+
+[Service]
+User=jordi
+Group=www-data
+WorkingDirectory=/home/jordi/projectes/python/flask/diferenciesInventariKF
+Environment="PATH=/home/jordi/projectes/python/flask/diferenciesInventariKF/entvirt/bin"
+ExecStart=/home/jordi/projectes/python/flask/diferenciesInventariKF/entvirt/bin/gunicorn --workers 3 --bind unix:diferenciesInventariKF.sock -m 007 app:app
+
+[Install]
+WantedBy=multi-user.target
