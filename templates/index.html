@@ -91,11 +91,25 @@
                         <p>S'han creuat les dades dels 2 inventaris. La columna 'Diferencia' mostra (Stock Farhos - Stock Kardex).</p>
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <input type="text" id="searchInputDiferencias" onkeyup="filterTable('searchInputDiferencias', 'diferencias-pane')" placeholder="Buscar a la taula de diferències..." class="form-control me-2">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" value="" id="filterDiffCheckbox" onchange="filterTable('searchInputDiferencias', 'diferencias-pane')">
-                                <label class="form-check-label text-nowrap" for="filterDiffCheckbox">
-                                    Mostrar només diferències (Diferencia ≠ 0)
-                                </label>
+                            <div class="d-flex flex-column">
+                                <div class="form-check me-3">
+                                    <input class="form-check-input" type="checkbox" value="" id="filterExternosCheckbox" onchange="filterTable('searchInputDiferencias', 'diferencias-pane')" checked>
+                                    <label class="form-check-label text-nowrap" for="filterExternosCheckbox">
+                                        Mostrar productes EXTERNS
+                                    </label>
+                                </div>
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox" value="" id="filterNoExternosCheckbox" onchange="filterTable('searchInputDiferencias', 'diferencias-pane')" checked>
+                                    <label class="form-check-label text-nowrap" for="filterNoExternosCheckbox">
+                                        Mostrar productes KARDEX
+                                    </label>
+                                </div>
+                                <div class="form-check me-3 mt-2">
+                                    <input class="form-check-input" type="checkbox" value="" id="filterDiffCheckbox" onchange="filterTable('searchInputDiferencias', 'diferencias-pane')">
+                                    <label class="form-check-label text-nowrap" for="filterDiffCheckbox">
+                                        Mostrar només diferències (Diferencia ≠ 0)
+                                    </label>
+                                </div>
                             </div>
                         </div>
                         <p class="text-muted mb-2">Registres: <span id="recordCountDiferencias"></span></p>
@@ -132,6 +146,11 @@
             let filterDiff = false;
             let diffColIndex = -1; // Índice de la columna 'Diferencia', se buscará dinámicamente
 
+            // Nuevos filtros para productos externos/no externos
+            let filterExternos = false;
+            let filterNoExternos = false;
+            let externoColIndex = -1; // Índice de la columna 'externo'
+
             // Solo se aplica a la tabla de diferencias
             if (tableContainerId === 'diferencias-pane') {
                 let checkbox = document.getElementById('filterDiffCheckbox');
@@ -142,6 +161,22 @@
                     for(let k=0; k<headers.length; k++) {
                         if (headers[k].textContent.trim() === 'Diferencia') {
                             diffColIndex = k;
+                            break;
+                        }
+                    }
+                }
+
+                let checkboxExternos = document.getElementById('filterExternosCheckbox');
+                let checkboxNoExternos = document.getElementById('filterNoExternosCheckbox');
+
+                if (checkboxExternos && checkboxNoExternos) {
+                    filterExternos = checkboxExternos.checked;
+                    filterNoExternos = checkboxNoExternos.checked;
+
+                    let headers = table.getElementsByTagName("th");
+                    for(let k=0; k<headers.length; k++) {
+                        if (headers[k].textContent.trim() === 'externo') {
+                            externoColIndex = k;
                             break;
                         }
                     }
@@ -186,6 +221,33 @@
                         }
                     } else {
                         showRow = false; // Ocultar si la celda de diferencia no existe
+                    }
+                }
+
+                // --- Filtro por productos externos/no externos ---
+                if (showRow && externoColIndex !== -1) {
+                    let isExterno;
+                    td = tr[i].getElementsByTagName("td");
+                    if (td[externoColIndex]) {
+                        // Convertir el texto de la celda a un booleano
+                        isExterno = (td[externoColIndex].textContent || td[externoColIndex].innerText).toLowerCase() === 'true';
+                    } else {
+                        // Si la celda no existe, asumimos que no es externo para evitar errores
+                        isExterno = false;
+                    }
+
+                    // Lógica para mostrar/ocultar basada en los checkboxes de externo/no externo
+                    if ((filterExternos && isExterno) || (filterNoExternos && !isExterno)) {
+                        // Si se marca 'Mostrar externos' y el producto es externo, o si se marca 'Mostrar no externos' y el producto no es externo, la fila se mantiene visible.
+                    } else if (filterExternos && filterNoExternos) {
+                        // Si ambos están marcados, mostrar todo (ya se manejó en la condición anterior o si no se filtra por nada más)
+                    } else {
+                        // Si no hay ningún checkbox marcado o la combinación no coincide, ocultar la fila.
+                        showRow = false;
+                    }
+                     // Si ninguno de los checkboxes de externo/no externo está marcado, no mostrar ninguna fila
+                    if (!filterExternos && !filterNoExternos) {
+                        showRow = false;
                     }
                 }
 

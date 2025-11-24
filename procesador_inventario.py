@@ -199,6 +199,9 @@ def comparar_inventarios(df_farhos, df_kardex):
     )
 
     # --- Limpieza Post-Fusión ---
+    # Determina si un producto es externo (si no tiene stock en Kardex después de la fusión)
+    df_comparativa['externo'] = df_comparativa['stock_kardex'].isna()
+
     # Rellena con 0 los stocks de productos que solo existen en uno de los inventarios.
     df_comparativa['stock_farhos'] = df_comparativa['stock_farhos'].fillna(0)
     df_comparativa['stock_kardex'] = df_comparativa['stock_kardex'].fillna(0)
@@ -215,6 +218,7 @@ def comparar_inventarios(df_farhos, df_kardex):
     df_final = df_comparativa[[
         'codigo', 
         'descripcion', 
+        'externo',
         'stock_farhos', 
         'stock_kardex', 
         'diferencia'
